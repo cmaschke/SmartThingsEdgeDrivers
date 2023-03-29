@@ -23,6 +23,8 @@ local Meter = (require "st.zwave.CommandClass.Meter")({version = 3})
 local Basic = (require "st.zwave.CommandClass.Basic")({ version = 1, strict = true })
 --- @type st.zwave.CommandClass.SwitchBinary
 local SwitchBinary = (require "st.zwave.CommandClass.SwitchBinary")({version = 2, strict = true })
+local energyMeterDefaults = require "st.zwave.defaults.energyMeter"
+local powerMeterDefaults = require "st.zwave.defaults.powerMeter"
 local MULTI_METERING_SWITCH_CONFIGURATION_MAP = require "multi-metering-switch/multi_metering_switch_configurations"
 
 local PARENT_ENDPOINT = 1
@@ -60,7 +62,7 @@ end
 local function create_child_device(driver, device, children_amount, device_profile)
   if device.network_type ~= st_device.NETWORK_TYPE_CHILD and
     not (device.child_ids and utils.table_size(device.child_ids) ~= 0) then
-    for i = 2, children_amount+1, 1 do
+    for i = 2, children_amount, 1 do
       if find_child(device, i) == nil then
         local device_name_without_number = string.sub(device.label, 0,-2)
         local name = string.format("%s%d", device_name_without_number, i)
@@ -83,7 +85,7 @@ local function device_added(driver, device, event)
     local children_amount = MULTI_METERING_SWITCH_CONFIGURATION_MAP.get_child_amount(device)
     local device_profile = MULTI_METERING_SWITCH_CONFIGURATION_MAP.get_child_switch_device_profile(device)
     if children_amount == nil then
-      children_amount = utils.table_size(device.zwave_endpoints)-2
+      children_amount = utils.table_size(device.zwave_endpoints)-1
     end
     create_child_device(driver, device, children_amount, device_profile)
   end
@@ -114,12 +116,31 @@ local function do_refresh(driver, device, command) -- should be deleted when v46
   end
 end
 
+local function meter_report_handler(driver, device, cmd)
+  -- We got a meter report from the root node, so refresh all children
+  -- endpoint 0 should have its reports dropped
+  if (cmd.src_channel == 0) then
+    device:refresh()
+    for _, child in pairs(device:get_child_list()) do
+      child:refresh()
+    end
+  else
+    powerMeterDefaults.zwave_handlers[cc.METER][Meter.REPORT](driver, device, cmd)
+    energyMeterDefaults.zwave_handlers[cc.METER][Meter.REPORT](driver, device, cmd)
+  end
+end
+
 local multi_metering_switch = {
   NAME = "multi metering switch",
   capability_handlers = {
     [capabilities.refresh.ID] = {
       [capabilities.refresh.commands.refresh.NAME] = do_refresh
     }
+  },
+  zwave_handlers = {
+    [cc.METER] = {
+      [Meter.REPORT] = meter_report_handler
+    },
   },
   lifecycle_handlers = {
     init = device_init,
