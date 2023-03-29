@@ -725,4 +725,16 @@ do
   )
 end
 
+test.register_coroutine_test(
+  "Switch Binary report from root node device should be ignored",
+  function ()
+    test.socket.zwave:__queue_receive({
+      mock_parent_device.id,
+      SwitchBinary:Report({
+        current_value = 0xFF
+      })
+    })
+  end
+)
+
 test.run_registered_tests()

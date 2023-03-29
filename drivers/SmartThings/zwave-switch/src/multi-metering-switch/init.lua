@@ -23,8 +23,10 @@ local Meter = (require "st.zwave.CommandClass.Meter")({version = 3})
 local Basic = (require "st.zwave.CommandClass.Basic")({ version = 1, strict = true })
 --- @type st.zwave.CommandClass.SwitchBinary
 local SwitchBinary = (require "st.zwave.CommandClass.SwitchBinary")({version = 2, strict = true })
+
 local energyMeterDefaults = require "st.zwave.defaults.energyMeter"
 local powerMeterDefaults = require "st.zwave.defaults.powerMeter"
+local switchDefaults = require "st.zwave.defaults.switch"
 local MULTI_METERING_SWITCH_CONFIGURATION_MAP = require "multi-metering-switch/multi_metering_switch_configurations"
 
 local PARENT_ENDPOINT = 1
@@ -130,6 +132,13 @@ local function meter_report_handler(driver, device, cmd)
   end
 end
 
+local function switch_report_handler(driver, device, cmd)
+  if (cmd.src_channel ~= 0) then
+    switchDefaults.zwave_handlers[cmd.cmd_class][cmd.cmd_id](driver, device, cmd)
+    powerMeterDefaults.zwave_handlers[cmd.cmd_class][cmd.cmd_id](driver, device, cmd)
+  end
+end
+
 local multi_metering_switch = {
   NAME = "multi metering switch",
   capability_handlers = {
@@ -141,6 +150,12 @@ local multi_metering_switch = {
     [cc.METER] = {
       [Meter.REPORT] = meter_report_handler
     },
+    [cc.SWITCH_BINARY] = {
+      [SwitchBinary.REPORT] = switch_report_handler
+    },
+    [cc.BASIC] = {
+      [Basic.REPORT] = switch_report_handler
+    }
   },
   lifecycle_handlers = {
     init = device_init,
