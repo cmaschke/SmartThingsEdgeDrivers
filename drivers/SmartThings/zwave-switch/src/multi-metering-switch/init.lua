@@ -23,6 +23,7 @@ local Meter = (require "st.zwave.CommandClass.Meter")({version = 3})
 local Basic = (require "st.zwave.CommandClass.Basic")({ version = 1, strict = true })
 --- @type st.zwave.CommandClass.SwitchBinary
 local SwitchBinary = (require "st.zwave.CommandClass.SwitchBinary")({version = 2, strict = true })
+local log = require "log"
 
 local energyMeterDefaults = require "st.zwave.defaults.energyMeter"
 local powerMeterDefaults = require "st.zwave.defaults.powerMeter"
@@ -89,6 +90,7 @@ local function device_added(driver, device, event)
     if children_amount == nil then
       children_amount = utils.table_size(device.zwave_endpoints)-1
     end
+    log.debug_with({hub_logs=true}, string.format("%s Should be creating %d children", device, children_amount-1))
     create_child_device(driver, device, children_amount, device_profile)
   end
   device:refresh()
