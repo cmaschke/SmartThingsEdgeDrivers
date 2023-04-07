@@ -84,6 +84,7 @@ local function create_child_device(driver, device, children_amount, device_profi
 end
 
 local function device_added(driver, device, event)
+  log.debug_with({hub_logs=true}, string.format("Device is being added and network type is %s", device.network_type))
   if device.network_type == st_device.NETWORK_TYPE_ZWAVE then
     local children_amount = MULTI_METERING_SWITCH_CONFIGURATION_MAP.get_child_amount(device)
     local device_profile = MULTI_METERING_SWITCH_CONFIGURATION_MAP.get_child_switch_device_profile(device)
