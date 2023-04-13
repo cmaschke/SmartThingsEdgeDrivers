@@ -46,8 +46,10 @@ local MULTI_METERING_SWITCH_FINGERPRINTS = {
 }
 
 local function can_handle_multi_metering_switch(opts, driver, device, ...)
+  log.debug_with({hub_logs=true}, string.format("multi-metering-switch checking fingerprint match for device: %s", device))
   for _, fingerprint in ipairs(MULTI_METERING_SWITCH_FINGERPRINTS) do
     if device:id_match(fingerprint.mfr, fingerprint.prod, fingerprint.model) then
+      log.debug_with({hub_logs=true}, string.format("multi-metering-switch device fingerprint match found by device: %s", device))
       return true
     end
   end
@@ -102,6 +104,7 @@ local function component_to_endpoint(device, component)
 end
 
 local function device_init(driver, device, event)
+  log.debug_with({hub_logs=true}, string.format("multi-metering-switch device init called by device: %s", device))
   if device.network_type == st_device.NETWORK_TYPE_ZWAVE then
     device:set_find_child(find_child)
     device:set_component_to_endpoint_fn(component_to_endpoint)
@@ -109,6 +112,7 @@ local function device_init(driver, device, event)
 end
 
 local function do_refresh(driver, device, command) -- should be deleted when v46 is released
+  log.debug_with({hub_logs=true}, string.format("multi-metering-switch device refresh called by device: %s", device))
   local component = command and command.component and command.component or "main"
   if device:is_cc_supported(cc.SWITCH_BINARY) then
     device:send_to_component(SwitchBinary:Get({}), component)
